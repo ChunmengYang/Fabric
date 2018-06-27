@@ -31,6 +31,9 @@ const (
 )
 
 var (
+	chaincodeGoPath = "./chaincode"
+	chaincodePath = "github.com/ChunmengYang/fabric-sdk-go/chaincode/example_cc"
+
 	ccInitArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte("200")}
 	ccUpgradeArgs = [][]byte{[]byte("init"), []byte("a"), []byte("100"), []byte("b"), []byte("400")}
 	ccQueryArgs = [][]byte{[]byte("query"), []byte("b")}
@@ -48,6 +51,8 @@ func RunWithoutSetup() {
 // setupAndRun enables testing an end-to-end scenario against the supplied SDK options
 // the doSetup flag will be used to either create a channel and the example CC or not(ie run the tests with existing ch and CC)
 func setupAndRun(doSetup bool, configOpt core.ConfigProvider, sdkOpts ...fabsdk.Option) {
+	logrus.SetLevel(logrus.DebugLevel)
+
 	sdk, err := fabsdk.New(configOpt, sdkOpts...)
 	if err != nil {
 		logrus.Fatalln(fmt.Sprintf("Failed to create new SDK: %s", err))
@@ -172,14 +177,14 @@ func queryCC(client *channel.Client) []byte {
 
 
 func createCC(orgResMgmt *resmgmt.Client) {
-	ccPkg, err := packager.NewCCPackage("example_cc", "./chaincode")
+	ccPkg, err := packager.NewCCPackage(chaincodePath, chaincodeGoPath)
 	if err != nil {
 		logrus.Fatalln(err.Error())
 	}
 	// Install example cc to org peers
 	installCCReq := resmgmt.InstallCCRequest{
 		Name: ccID,
-		Path: "example_cc",
+		Path: chaincodePath,
 		Version: "0",
 		Package: ccPkg,
 	}
@@ -196,7 +201,7 @@ func createCC(orgResMgmt *resmgmt.Client) {
 		channelID,
 		resmgmt.InstantiateCCRequest{
 			Name: ccID,
-			Path: "example_cc",
+			Path: chaincodePath,
 			Version: "0",
 			Args: ccInitArgs,
 			Policy: ccPolicy,
@@ -212,12 +217,12 @@ func createCC(orgResMgmt *resmgmt.Client) {
 }
 
 func upgradeCC(org1ResMgmt, org2ResMgmt *resmgmt.Client) {
-	ccPkg, err := packager.NewCCPackage("example_cc", "./chaincode")
+	ccPkg, err := packager.NewCCPackage(chaincodePath, chaincodeGoPath)
 	if err != nil {
 		logrus.Fatalln(err.Error())
 	}
 
-	installCCReq := resmgmt.InstallCCRequest{Name: ccID, Path: "example_cc", Version: "1", Package: ccPkg}
+	installCCReq := resmgmt.InstallCCRequest{Name: ccID, Path: chaincodePath, Version: "1.2", Package: ccPkg}
 	// Install example cc version '1' to Org1 peers
 	_, err = org1ResMgmt.InstallCC(installCCReq, resmgmt.WithRetry(retry.DefaultResMgmtOpts))
 	if err != nil {
@@ -228,18 +233,66 @@ func upgradeCC(org1ResMgmt, org2ResMgmt *resmgmt.Client) {
 	if err != nil {
 		logrus.Fatalln(err.Error())
 	}
+
+	res, err := org1ResMgmt.QueryInstalledChaincodes(resmgmt.WithTargetEndpoints("peer0.org1.example.com"), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	if err != nil {
+		logrus.Fatalln(err.Error())
+	}
+	logrus.Info("====================查询已经安装的Chaincodes=========================")
+	logrus.Info(res.String())
+	logrus.Info("====================================================================")
+
+	res, err = org1ResMgmt.QueryInstantiatedChaincodes(channelID, resmgmt.WithTargetEndpoints("peer0.org1.example.com"))
+	if err != nil {
+		logrus.Fatalln(err.Error())
+	}
+	logrus.Info("====================查询已经初始化的Chaincodes=========================")
+	logrus.Info(res.String())
+	logrus.Info("====================================================================")
+
 	// New chaincode policy (both orgs have to approve)
 	ccPolicy, err := cauthdsl.FromString("AND ('Org1MSP.member','Org2MSP.member')")
 	if err != nil {
 		logrus.Fatalln(err.Error())
 	}
-	// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
-	upgradeResp, err := org1ResMgmt.UpgradeCC(channelID, resmgmt.UpgradeCCRequest{Name: ccID, Path: "example_cc", Version: "1", Args: ccUpgradeArgs, Policy: ccPolicy})
+	// Org resource manager will instantiate 'example_cc' on channel
+	resp, err := org1ResMgmt.InstantiateCC(
+		channelID,
+		resmgmt.InstantiateCCRequest{
+			Name: ccID,
+			Path: chaincodePath,
+			Version: "1.2",
+			Args: ccInitArgs,
+			Policy: ccPolicy,
+		},
+		resmgmt.WithRetry(retry.DefaultResMgmtOpts),
+	)
+
 	if err != nil {
-		logrus.Fatalln(fmt.Sprintf("Failed to upgrade chaincode: %s", err))
+		logrus.Fatalln(fmt.Sprintf("Failed to instantiate chaincode: %s", err))
 		return
 	}
-	logrus.Info(fmt.Sprintf("Transaction ID: %s", upgradeResp))
+	logrus.Info(fmt.Sprintf("Transaction ID: %s", resp))
+
+	//// Org1 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
+	//upgradeResp, err := org1ResMgmt.UpgradeCC(channelID, resmgmt.UpgradeCCRequest{Name: ccID, Path:chaincodePath, Version: "1.1", Args: ccUpgradeArgs, Policy: ccPolicy})
+	//if err != nil {
+	//	logrus.Fatalln(fmt.Sprintf("Failed to upgrade chaincode: %s", err))
+	//	return
+	//}
+	//if upgradeResp.TransactionID != "" {
+	//	logrus.Info("Upgraded chaincode at org1")
+	//}
+
+	//// Org2 resource manager will instantiate 'example_cc' version 1 on 'orgchannel'
+	//upgradeResp, err = org2ResMgmt.UpgradeCC(channelID, resmgmt.UpgradeCCRequest{Name: ccID, Path:chaincodePath, Version: "1", Args: ccUpgradeArgs, Policy: ccPolicy})
+	//if err != nil {
+	//	logrus.Fatalln(fmt.Sprintf("Failed to upgrade chaincode: %s", err))
+	//	return
+	//}
+	//if upgradeResp.TransactionID != "" {
+	//	logrus.Info("Upgraded chaincode at org2")
+	//}
 }
 
 func createChannel(sdk *fabsdk.FabricSDK, resMgmtClient *resmgmt.Client) {
