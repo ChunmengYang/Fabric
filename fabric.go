@@ -23,7 +23,8 @@ import (
 
 const (
 	channelID      = "orgchannel"
-	orgName        = "org1"
+	org1Name        = "org1"
+	org2Name        = "org2"
 	orgAdmin       = "Admin"
 	ordererOrgName = "ordererorg"
 	ccID           = "exampleCC"
@@ -58,7 +59,7 @@ func setupAndRun(doSetup bool, configOpt core.ConfigProvider, sdkOpts ...fabsdk.
 	}
 
 	//prepare channel client context using client context
-	clientChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser("User1"), fabsdk.WithOrg(orgName))
+	clientChannelContext := sdk.ChannelContext(channelID, fabsdk.WithUser("User1"), fabsdk.WithOrg(org1Name))
 	// Channel client is used to query and execute transactions (Org1 is default org)
 	client, err := channel.New(clientChannelContext)
 	if err != nil {
@@ -92,38 +93,48 @@ func setupAndRun(doSetup bool, configOpt core.ConfigProvider, sdkOpts ...fabsdk.
 }
 
 func createChannelAndCC(sdk *fabsdk.FabricSDK) {
-	//clientContext allows creation of transactions using the supplied identity as the credential.
-	clientContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(ordererOrgName))
-
-	// Resource management client is responsible for managing channels (create/update channel)
-	// Supply user that has privileges to create channel (in this case orderer admin)
-	resMgmtClient, err := resmgmt.New(clientContext)
-	if err != nil {
-		logrus.Fatalln(fmt.Sprintf("Failed to create channel management client: %s", err))
-	}
-
-	// Create channel
-
-	// Org admin user is signing user for creating channel
-
-	createChannel(sdk, resMgmtClient)
+	////clientContext allows creation of transactions using the supplied identity as the credential.
+	//clientContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(ordererOrgName))
+	//
+	//// Resource management client is responsible for managing channels (create/update channel)
+	//// Supply user that has privileges to create channel (in this case orderer admin)
+	//resMgmtClient, err := resmgmt.New(clientContext)
+	//if err != nil {
+	//	logrus.Fatalln(fmt.Sprintf("Failed to create channel management client: %s", err))
+	//}
+	//
+	//// Create channel
+	//
+	//// Org admin user is signing user for creating channel
+	//
+	//createChannel(sdk, resMgmtClient)
 
 	//prepare context
-	adminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName))
+	org1AdminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(org1Name))
 
 	// Org resource management client
-	orgResMgmt, err := resmgmt.New(adminContext)
+	org1ResMgmt, err := resmgmt.New(org1AdminContext)
 	if err != nil {
 		logrus.Fatalln(fmt.Sprintf("Failed to create new resource management client: %s", err))
 	}
 
 	// Org peers join channel
-	if err = orgResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
-		logrus.Fatalln(fmt.Sprintf("Org peers failed to JoinChannel: %s", err))
-	}
+	//if err = org1ResMgmt.JoinChannel(channelID, resmgmt.WithRetry(retry.DefaultResMgmtOpts), resmgmt.WithOrdererEndpoint("orderer.example.com")); err != nil {
+	//	logrus.Fatalln(fmt.Sprintf("Org peers failed to JoinChannel: %s", err))
+	//}
+	//// Create chaincode package for example cc
+	//createCC(org1ResMgmt)
 
-	// Create chaincode package for example cc
-	createCC(orgResMgmt)
+
+	//prepare context
+	org2AdminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(org2Name))
+
+	// Org resource management client
+	org2ResMgmt, err := resmgmt.New(org2AdminContext)
+	if err != nil {
+		logrus.Fatalln(fmt.Sprintf("Failed to create new resource management client: %s", err))
+	}
+	upgradeCC(org1ResMgmt, org2ResMgmt)
 }
 
 func verifyFundsIsMoved(client *channel.Client, value []byte) {
@@ -232,7 +243,7 @@ func upgradeCC(org1ResMgmt, org2ResMgmt *resmgmt.Client) {
 }
 
 func createChannel(sdk *fabsdk.FabricSDK, resMgmtClient *resmgmt.Client) {
-	mspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(orgName))
+	mspClient, err := mspclient.New(sdk.Context(), mspclient.WithOrg(org1Name))
 	if err != nil {
 		logrus.Fatalln(err.Error())
 	}
