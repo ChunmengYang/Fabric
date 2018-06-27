@@ -1,0 +1,363 @@
+#
+# Schema version of the content. Used by the SDK to apply the corresponding parsing rules.
+#
+version: 1.0.0
+
+#
+# The client section used by GO SDK.
+#
+client:
+
+  # Which organization does this application instance belong to? The value must be the name of an org
+  # defined under "organizations"
+  organization: org1
+
+  logging:
+    level: info
+
+  # Global configuration for peer, event service and orderer timeouts
+  # if this this section is omitted, then default values will be used (same values as below)
+#  peer:
+#    timeout:
+#      connection: 10s
+#      response: 180s
+#      discovery:
+#        # Expiry period for discovery service greylist filter
+#        # The channel client will greylist peers that are found to be offline
+#        # to prevent re-selecting them in subsequent retries.
+#        # This interval will define how long a peer is greylisted
+#        greylistExpiry: 10s
+  eventService:
+    # Event service type (deliver|eventhub) - default: deliver
+    # NOTE: This is temporary until the SDK starts making use of channel capabilities
+    type: deliver
+    # the below timeouts are commented out to use the default values that are found in
+    # "pkg/fab/endpointconfig.go"
+    # the client is free to override the default values by uncommenting and resetting
+    # the values as they see fit in their config file
+#    timeout:
+#      connection: 15s
+#      registrationResponse: 15s
+#  orderer:
+#    timeout:
+#      connection: 15s
+#      response: 15s
+#  global:
+#    timeout:
+#      query: 180s
+#      execute: 180s
+#      resmgmt: 180s
+#    cache:
+#      connectionIdle: 30s
+#      eventServiceIdle: 2m
+#      channelConfig: 30m
+#      channelMembership: 30s
+
+  # Root of the MSP directories with keys and certs.
+  cryptoconfig:
+    path: ${GOPATH}/src/cm/fabric/crypto-config
+
+  # Some SDKs support pluggable KV stores, the properties under "credentialStore"
+  # are implementation specific
+  credentialStore:
+    # [Optional]. Used by user store. Not needed if all credentials are embedded in configuration
+    # and enrollments are performed elswhere.
+    path: "/tmp/state-store"
+
+    # [Optional]. Specific to the CryptoSuite implementation used by GO SDK. Software-based implementations
+    # requiring a key store. PKCS#11 based implementations does not.
+    cryptoStore:
+      # Specific to the underlying KeyValueStore that backs the crypto key store.
+      path: /tmp/msp
+
+   # BCCSP config for the client. Used by GO SDK.
+  BCCSP:
+    security:
+     enabled: true
+     default:
+      provider: "SW"
+     hashAlgorithm: "SHA2"
+     softVerify: true
+     level: 256
+
+  tlsCerts:
+    # [Optional]. Use system certificate pool when connecting to peers, orderers (for negotiating TLS) Default: false
+    systemCertPool: false
+
+    # [Optional]. Client key and cert for TLS handshake with peers and orderers
+    client:
+      key:
+        path: ${GOPATH}/src/cm/fabric/config/mutual_tls/client_sdk_go-key.pem
+      cert:
+        path: ${GOPATH}/src/cm/fabric/config/mutual_tls/client_sdk_go.pem
+
+#
+# [Optional]. But most apps would have this section so that channel objects can be constructed
+# based on the content below. If an app is creating channels, then it likely will not need this
+# section.
+#
+channels:
+  # name of the channel
+  orgchannel:
+    # Required. list of orderers designated by the application to use for transactions on this
+    # channel. This list can be a result of access control ("org1" can only access "ordererA"), or
+    # operational decisions to share loads from applications among the orderers.  The values must
+    # be "names" of orgs defined under "organizations/peers"
+    # deprecated: not recommended, to override any orderer configuration items, entity matchers should be used.
+#    orderers:
+#      - orderer.example.com
+
+    # Required. list of peers from participating orgs
+    peers:
+      peer0.org1.example.com:
+        # [Optional]. will this peer be sent transaction proposals for endorsement? The peer must
+        # have the chaincode installed. The app can also use this property to decide which peers
+        # to send the chaincode install request. Default: true
+        endorsingPeer: true
+
+        # [Optional]. will this peer be sent query proposals? The peer must have the chaincode
+        # installed. The app can also use this property to decide which peers to send the
+        # chaincode install request. Default: true
+        chaincodeQuery: true
+
+        # [Optional]. will this peer be sent query proposals that do not require chaincodes, like
+        # queryBlock(), queryTransaction(), etc. Default: true
+        ledgerQuery: true
+
+        # [Optional]. will this peer be the target of the SDK's listener registration? All peers can
+        # produce events but the app typically only needs to connect to one to listen to events.
+        # Default: true
+        eventSource: true
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+    # [Optional]. The application can use these options to perform channel operations like retrieving channel
+    # config etc.
+    policies:
+      #[Optional] options for retrieving channel configuration blocks
+      queryChannelConfig:
+        #[Optional] min number of success responses (from targets/peers)
+        minResponses: 1
+        #[Optional] channel config will be retrieved for these number of random targets
+        maxTargets: 1
+        #[Optional] retry options for query config block
+        retryOpts:
+          #[Optional] number of retry attempts
+          attempts: 5
+          #[Optional] the back off interval for the first retry attempt
+          initialBackoff: 500ms
+          #[Optional] the maximum back off interval for any retry attempt
+          maxBackoff: 5s
+          #[Optional] he factor by which the initial back off period is exponentially incremented
+          backoffFactor: 2.0
+
+#
+# list of participating organizations in this network
+#
+organizations:
+  org1:
+    mspid: Org1MSP
+
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
+    cryptoPath:  peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
+
+    users:
+          Admin:
+            cert:
+              pem: |
+                -----BEGIN CERTIFICATE-----
+                MIICKTCCAc+gAwIBAgIPMceAANj8J1NcpwnPoT/NMAoGCCqGSM49BAMCMHMxCzAJ
+                BgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJh
+                bmNpc2NvMRkwFwYDVQQKExBvcmcxLmV4YW1wbGUuY29tMRwwGgYDVQQDExNjYS5v
+                cmcxLmV4YW1wbGUuY29tMB4XDTE4MDYyMDAyMjQyM1oXDTI4MDYxNzAyMjQyM1ow
+                bDELMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNh
+                biBGcmFuY2lzY28xDzANBgNVBAsTBmNsaWVudDEfMB0GA1UEAwwWQWRtaW5Ab3Jn
+                MS5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCHP+mTysc4U
+                12435XtxGir/yIhf4Wvgg0jUEANKmMt3Ci9xoFl/TSY1bO1dXe1azq4p/2cvmab6
+                lonr0gbXOY2jTTBLMA4GA1UdDwEB/wQEAwIHgDAMBgNVHRMBAf8EAjAAMCsGA1Ud
+                IwQkMCKAIJ3PYXTNmlu4W8oeISyOKX2Lm7y2TNTwc4ppOuJCNpv3MAoGCCqGSM49
+                BAMCA0gAMEUCIQCYUrhL0Isc1C7InKX3n4k7OKAkzpsnj3m05iBgI7IgkgIgSCGo
+                cMxkFEUvMSQ5hltQl0ekPSxzLQTsKjhRaagzb24=
+                -----END CERTIFICATE-----
+          User1:
+            cert:
+              pem: |
+                -----BEGIN CERTIFICATE-----
+                MIICKzCCAdGgAwIBAgIRAPuNVFcQIxcP3gIagRYUkc8wCgYIKoZIzj0EAwIwczEL
+                MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+                cmFuY2lzY28xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
+                Lm9yZzEuZXhhbXBsZS5jb20wHhcNMTgwNjIwMDIyNDIzWhcNMjgwNjE3MDIyNDIz
+                WjBsMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
+                U2FuIEZyYW5jaXNjbzEPMA0GA1UECxMGY2xpZW50MR8wHQYDVQQDDBZVc2VyMUBv
+                cmcxLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEkdK2LFlL
+                TLbQaiITuWYYoYK+Bhr2eKk7OoFeaH9gUrmthqvhAX/hlsQ9LImaq0ezkitWdA+A
+                b0ejuUSgprmga6NNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYD
+                VR0jBCQwIoAgnc9hdM2aW7hbyh4hLI4pfYubvLZM1PBzimk64kI2m/cwCgYIKoZI
+                zj0EAwIDSAAwRQIhAPDBjZ6lLtfVqkCzaBa2Cy4VEyXoH6k6c/IDIdMJjajAAiA2
+                dIneCpfYO4iROCivl+xTs5MHaxqV5kAKp0jQan0Aww==
+                -----END CERTIFICATE-----
+
+    peers:
+      - peer0.org1.example.com
+
+    # [Optional]. Certificate Authorities issue certificates for identification purposes in a Fabric based
+    # network. Typically certificates provisioning is done in a separate process outside of the
+    # runtime network. Fabric-CA is a special certificate authority that provides a REST APIs for
+    # dynamic certificate management (enroll, revoke, re-enroll). The following section is only for
+    # Fabric-CA servers.
+#    certificateAuthorities:
+#      - ca.org1.example.com
+
+  # the profile will contain public information about organizations other than the one it belongs to.
+  # These are necessary information to make transaction lifecycles work, including MSP IDs and
+  # peers with a public URL to send transaction proposals. The file will not contain private
+  # information reserved for members of the organization, such as admin key and certificate,
+  # fabric-ca registrar enroll ID and secret, etc.
+  org2:
+    mspid: Org2MSP
+
+    # This org's MSP store (absolute path or relative to client.cryptoconfig)
+    cryptoPath:  peerOrganizations/org2.example.com/users/{username}@org2.example.com/msp
+
+    users:
+          Admin:
+            cert:
+              pem: |
+                -----BEGIN CERTIFICATE-----
+                MIICKjCCAdCgAwIBAgIQcKp7eDA306ePwcdEuBsf3DAKBggqhkjOPQQDAjBzMQsw
+                CQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy
+                YW5jaXNjbzEZMBcGA1UEChMQb3JnMi5leGFtcGxlLmNvbTEcMBoGA1UEAxMTY2Eu
+                b3JnMi5leGFtcGxlLmNvbTAeFw0xODA2MjAwMjI0MjNaFw0yODA2MTcwMjI0MjNa
+                MGwxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1T
+                YW4gRnJhbmNpc2NvMQ8wDQYDVQQLEwZjbGllbnQxHzAdBgNVBAMMFkFkbWluQG9y
+                ZzIuZXhhbXBsZS5jb20wWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQarkgd9rg9
+                JwGThiOTKUIql5wysVVsb/iNjZE9770dg30gGTM1NXcJS6+u2NCtJVKRo7Oue9pP
+                sEE7E6y9K0jKo00wSzAOBgNVHQ8BAf8EBAMCB4AwDAYDVR0TAQH/BAIwADArBgNV
+                HSMEJDAigCCLjZouteADFjYsi3ZCJ2maudymY4oy2vNPv7hOCALV1zAKBggqhkjO
+                PQQDAgNIADBFAiEA7WKv8Lj1YiXSVDp2nEt9EsewpWnH5ChbsGTPjHuPxHcCICnq
+                pErXUwUCawAJvfjFLhX+T3Jj3cMO0vl/4e/l3grL
+                -----END CERTIFICATE-----
+          User1:
+            cert:
+              pem: |
+                -----BEGIN CERTIFICATE-----
+                MIICKzCCAdGgAwIBAgIRAL2awZVVyiNy7oaOhAU3vhAwCgYIKoZIzj0EAwIwczEL
+                MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+                cmFuY2lzY28xGTAXBgNVBAoTEG9yZzIuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
+                Lm9yZzIuZXhhbXBsZS5jb20wHhcNMTgwNjIwMDIyNDIzWhcNMjgwNjE3MDIyNDIz
+                WjBsMQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMN
+                U2FuIEZyYW5jaXNjbzEPMA0GA1UECxMGY2xpZW50MR8wHQYDVQQDDBZVc2VyMUBv
+                cmcyLmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEdvhLkGmE
+                qxUHQlbNWCh1C+lYGS+Scl9u7esYWMQUvzjnkIh890rMICy7+9qK1NyyGmh0hnzv
+                Qk3fL5nHM9r2/qNNMEswDgYDVR0PAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwKwYD
+                VR0jBCQwIoAgi42aLrXgAxY2LIt2QidpmrncpmOKMtrzT7+4TggC1dcwCgYIKoZI
+                zj0EAwIDSAAwRQIhAOp4/27BuPNT/CVT7tCBrhp3PR+OMw1MkrVhux1VGspcAiAQ
+                DMvY9aXMcbpXNDxXP0kK+qhl1iDr3XUJn0kcbsRnAg==
+                -----END CERTIFICATE-----
+
+    peers:
+      - peer0.org2.example.com
+
+#    certificateAuthorities:
+#      - ca.org2.example.com
+
+  # Orderer Org name
+  ordererorg:
+      # Membership Service Provider ID for this organization
+      mspID: "OrdererOrg"
+
+      # Needed to load users crypto keys and certs for this org (absolute path or relative to global crypto path, DEV mode)
+      cryptoPath: ordererOrganizations/example.com/users/{username}@example.com/msp
+
+      users:
+              Admin:
+                cert:
+                  pem: |
+                    -----BEGIN CERTIFICATE-----
+                    MIICCjCCAbGgAwIBAgIRAKuIoDSf47FvBNL65OmHL4gwCgYIKoZIzj0EAwIwaTEL
+                    MAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG
+                    cmFuY2lzY28xFDASBgNVBAoTC2V4YW1wbGUuY29tMRcwFQYDVQQDEw5jYS5leGFt
+                    cGxlLmNvbTAeFw0xODA2MjAwMjI0MjNaFw0yODA2MTcwMjI0MjNaMFYxCzAJBgNV
+                    BAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNp
+                    c2NvMRowGAYDVQQDDBFBZG1pbkBleGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqG
+                    SM49AwEHA0IABGc1X09XrsAR86vKLzyagHbaz2j9O4bW2EFHk0Wi1E2pCkLijt4X
+                    MLF0pogrh9wZp0VQna0XZs49uG6W/jnz8yGjTTBLMA4GA1UdDwEB/wQEAwIHgDAM
+                    BgNVHRMBAf8EAjAAMCsGA1UdIwQkMCKAID5fqnq2y+Za2eODLODhd5cVbrenClUN
+                    zZ9UJRrDmjZGMAoGCCqGSM49BAMCA0cAMEQCIGMwEsBfJpGmkasOikeaPvyEjlYI
+                    HJnxhOBcm3lZV66fAiAF6Y65/bRIH6DixJBoZMp4bq6YOp+FbcVQIhHtz5S/nQ==
+                    -----END CERTIFICATE-----
+#
+# List of orderers to send transaction and channel create/update requests to. For the time
+# being only one orderer is needed. If more than one is defined, which one get used by the
+# SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
+#
+orderers:
+  orderer.example.com:
+    url: 192.168.182.135:7050
+
+    # these are standard properties defined by the gRPC library
+    # they will be passed in as-is to gRPC client constructor
+    grpcOptions:
+      ssl-target-name-override: orderer.example.com
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/cm/fabric/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+
+#
+# List of peers to send various requests to, including endorsement, query
+# and event listener registration.
+#
+peers:
+  peer0.org1.example.com:
+    # this URL is used to send endorsement and query requests
+    url: 192.168.182.135:7051
+    # eventUrl is only needed when using eventhub (default is delivery service)
+    eventUrl: 192.168.182.135:7053
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+      # Certificate location absolute path
+      path: ${GOPATH}/src/cm/fabric/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+  peer0.org2.example.com:
+    url: 192.168.182.135:8051
+    # eventUrl is only needed when using eventhub (default is delivery service)
+    eventUrl: 192.168.182.135:8053
+    grpcOptions:
+      ssl-target-name-override: peer0.org2.example.com
+      # These parameters should be set in coordination with the keepalive policy on the server,
+      # as incompatible settings can result in closing of connection.
+      # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
+      keep-alive-time: 0s
+      keep-alive-timeout: 20s
+      keep-alive-permit: false
+      fail-fast: false
+      # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
+      allow-insecure: false
+
+    tlsCACerts:
+      path: ${GOPATH}/src/cm/fabric/crypto-config/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
