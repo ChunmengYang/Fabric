@@ -55,7 +55,7 @@ client:
 
   # Root of the MSP directories with keys and certs.
   cryptoconfig:
-    path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/crypto-config
+    path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/fabric/crypto-config
 
   # Some SDKs support pluggable KV stores, the properties under "credentialStore"
   # are implementation specific
@@ -87,9 +87,9 @@ client:
     # [Optional]. Client key and cert for TLS handshake with peers and orderers
     client:
       key:
-        path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/config/mutual_tls/client_sdk_go-key.pem
+        path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/fabric/config/mutual_tls/client_sdk_go-key.pem
       cert:
-        path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/config/mutual_tls/client_sdk_go.pem
+        path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/fabric/config/mutual_tls/client_sdk_go.pem
 
 #
 # [Optional]. But most apps would have this section so that channel objects can be constructed
@@ -97,6 +97,29 @@ client:
 # section.
 #
 channels:
+  # name of the channel
+  mychannel:
+    # Required. list of orderers designated by the application to use for transactions on this
+    # channel. This list can be a result of access control ("org1" can only access "ordererA"), or
+    # operational decisions to share loads from applications among the orderers.  The values must
+    # be "names" of orgs defined under "organizations/peers"
+    # deprecated: not recommended, to override any orderer configuration items, entity matchers should be used.
+#    orderers:
+#      - orderer.example.com
+
+    # Required. list of peers from participating orgs
+    peers:
+      peer0.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
   # name of the channel
   orgchannel:
     # Required. list of orderers designated by the application to use for transactions on this
@@ -306,7 +329,7 @@ orderers:
       # as incompatible settings can result in closing of connection.
       # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
-      keep-alive-timeout: 20s
+      keep-alive-timeout: 60s
       keep-alive-permit: false
       fail-fast: false
       # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
@@ -314,7 +337,7 @@ orderers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/fabric/crypto-config/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
 
 #
 # List of peers to send various requests to, including endorsement, query
@@ -341,7 +364,7 @@ peers:
 
     tlsCACerts:
       # Certificate location absolute path
-      path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/fabric/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   peer0.org2.example.com:
     url: 192.168.182.135:9051
@@ -360,4 +383,4 @@ peers:
       allow-insecure: false
 
     tlsCACerts:
-      path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/crypto-config/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+      path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/fabric/crypto-config/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
