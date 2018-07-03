@@ -16,13 +16,13 @@ import (
 //)
 
 func TestChaincodeQuery(t *testing.T) {
-	ccQueryArgs := [][]byte{[]byte("b")}
+	ccQueryArgs := [][]byte{[]byte("a")}
 	res := ChaincodeQuery("mychannel", "User1", "org1", "mycc", ccQueryArgs)
 	fmt.Println(string(res))
 }
 
 func TestChaincodeExecute(t *testing.T) {
-	ccTxArgs :=[][]byte{[]byte("a"), []byte("b"), []byte("10")}
+	ccTxArgs :=[][]byte{[]byte("b"), []byte("a"), []byte("100")}
 	res := ChaincodeExecute("mychannel", "User1", "org1", "mycc", ccTxArgs)
 	fmt.Println(string(res))
 }

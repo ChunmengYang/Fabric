@@ -316,10 +316,13 @@ organizations:
 # List of orderers to send transaction and channel create/update requests to. For the time
 # being only one orderer is needed. If more than one is defined, which one get used by the
 # SDK is implementation specific. Consult each SDK's documentation for its handling of orderers.
-#
+# 修改宿主机hosts linux: /etc/hosts  Window: C:\Windows\System32\drivers\etc\hosts
+#192.168.182.135 orderer.example.com
+#192.168.182.135 peer0.org1.example.com
+#192.168.182.135 peer0.org2.example.com
 orderers:
   orderer.example.com:
-    url: 192.168.182.135:7050
+    url: orderer.example.com:7050
 
     # these are standard properties defined by the gRPC library
     # they will be passed in as-is to gRPC client constructor
@@ -329,7 +332,7 @@ orderers:
       # as incompatible settings can result in closing of connection.
       # When duration of the 'keep-alive-time' is set to 0 or less the keep alive client parameters are disabled
       keep-alive-time: 0s
-      keep-alive-timeout: 60s
+      keep-alive-timeout: 20s
       keep-alive-permit: false
       fail-fast: false
       # allow-insecure will be taken into consideration if address has no protocol defined, if true then grpc or else grpcs
@@ -346,9 +349,9 @@ orderers:
 peers:
   peer0.org1.example.com:
     # this URL is used to send endorsement and query requests
-    url: 192.168.182.135:7051
+    url: peer0.org1.example.com:7051
     # eventUrl is only needed when using eventhub (default is delivery service)
-    eventUrl: 192.168.182.135:7053
+    eventUrl: peer0.org1.example.com:7053
 
     grpcOptions:
       ssl-target-name-override: peer0.org1.example.com
@@ -367,9 +370,9 @@ peers:
       path: ${GOPATH}/src/github.com/ChunmengYang/fabric-sdk-go/fabric/crypto-config/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
 
   peer0.org2.example.com:
-    url: 192.168.182.135:9051
+    url: peer0.org2.example.com:9051
     # eventUrl is only needed when using eventhub (default is delivery service)
-    eventUrl: 192.168.182.135:9053
+    eventUrl: peer0.org2.example.com:9053
     grpcOptions:
       ssl-target-name-override: peer0.org2.example.com
       # These parameters should be set in coordination with the keepalive policy on the server,
