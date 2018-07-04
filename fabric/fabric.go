@@ -43,7 +43,7 @@ func createChannelClient(channelID, userName, orgName string) (*fabsdk.FabricSDK
 	return sdk, client, nil
 }
 
-func ChaincodeQuery(channelID, userName, orgName, chaincodeID string, queryArgs [][]byte) []byte {
+func ChaincodeQuery(channelID, userName, orgName, chaincodeID, fcn string, queryArgs [][]byte) []byte {
 	sdk, client, err := createChannelClient(channelID, userName, orgName)
 	if err != nil {
 		logrus.Errorln(err.Error())
@@ -51,7 +51,7 @@ func ChaincodeQuery(channelID, userName, orgName, chaincodeID string, queryArgs 
 	}
 	defer sdk.Close()
 
-	response, err := client.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: "query", Args: queryArgs}, channel.WithRetry(retry.DefaultChannelOpts))
+	response, err := client.Query(channel.Request{ChaincodeID: chaincodeID, Fcn: fcn, Args: queryArgs}, channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		logrus.Errorln(fmt.Sprintf("Failed to query funds: %s", err))
 		return nil
@@ -60,7 +60,7 @@ func ChaincodeQuery(channelID, userName, orgName, chaincodeID string, queryArgs 
 	return response.Payload
 }
 
-func ChaincodeExecute(channelID, userName, orgName, chaincodeID string, txArgs [][]byte) []byte {
+func ChaincodeExecute(channelID, userName, orgName, chaincodeID, fcn string, txArgs [][]byte) []byte {
 	sdk, client, err := createChannelClient(channelID, userName, orgName)
 	if err != nil {
 		logrus.Errorln(err.Error())
@@ -68,13 +68,36 @@ func ChaincodeExecute(channelID, userName, orgName, chaincodeID string, txArgs [
 	}
 	defer sdk.Close()
 
-	response, err := client.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: "invoke", Args: txArgs}, channel.WithRetry(retry.DefaultChannelOpts))
+	response, err := client.Execute(channel.Request{ChaincodeID: chaincodeID, Fcn: fcn, Args: txArgs}, channel.WithRetry(retry.DefaultChannelOpts))
 	if err != nil {
 		logrus.Errorln(fmt.Sprintf("Failed to query funds: %s", err))
 		return nil
 	}
 
 	return response.Payload
+}
+
+func QueryInstalledChaincode(orgName, orgAdmin, targetEndpoint string) string {
+	sdk, err := fabsdk.New(sdkConfig)
+	if err != nil {
+		logrus.Errorln(fmt.Sprintf("Failed to create new SDK: %s", err))
+		return ""
+	}
+	defer sdk.Close()
+
+	orgAdminContext := sdk.Context(fabsdk.WithUser(orgAdmin), fabsdk.WithOrg(orgName))
+	// Org resource management client
+	orgResMgmt, err := resmgmt.New(orgAdminContext)
+	if err != nil {
+		logrus.Errorln(fmt.Sprintf("Failed to create new resource management client: %s", err))
+		return ""
+	}
+	res, err := orgResMgmt.QueryInstalledChaincodes(resmgmt.WithTargetEndpoints(targetEndpoint), resmgmt.WithRetry(retry.DefaultResMgmtOpts))
+	if err != nil {
+		logrus.Errorln(fmt.Sprintf("Failed to query installed chaincodes: %s", err))
+		return ""
+	}
+	return  res.String()
 }
 
 func CreateChannel(channelID, channelConfigPath, orgName, orgAdmin, ordererOrgName, ordererEndpoint, ordererAdmin string) bool {
