@@ -1,0 +1,20 @@
+{
+	"ImportPath": "github.com/ChunmengYang/fabric-sdk-go",
+	"GoVersion": "go1.9",
+	"GodepVersion": "v80",
+	"Deps": [
+		{
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v1.0.4-9-g8c0189d",
+			"Rev": "8c0189d9f6bbf301e5d055d34268156b317016af"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/terminal",
+			"Rev": "850760c427c516be930bc91280636328f1a62286"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "0b25a408a50076fbbcae6b7ac0ea5fbb0b085e79"
+		}
+	]
+}

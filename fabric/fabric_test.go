@@ -22,7 +22,7 @@ func TestChaincodeQuery(t *testing.T) {
 }
 
 func TestChaincodeExecute(t *testing.T) {
-	ccTxArgs :=[][]byte{[]byte("b"), []byte("a"), []byte("100")}
+	ccTxArgs :=[][]byte{[]byte("b"), []byte("a"), []byte("10")}
 	res := ChaincodeExecute("mychannel", "User1", "org1", "mycc", "invoke", ccTxArgs)
 
 	//ccQueryArgs := [][]byte{[]byte("b")}
@@ -32,9 +32,9 @@ func TestChaincodeExecute(t *testing.T) {
 
 func TestQueryInstalledChaincode(t *testing.T) {
 	res := QueryInstalledChaincode(
-		"org1",
+		"org2",
 		"Admin",
-		"peer0.org1.example.com")
+		"peer0.org2.example.com")
 
 	fmt.Println(res)
 }
@@ -56,12 +56,22 @@ func TestCreateChannel(t *testing.T) {
 //find -name "example*"
 //./var/hyperledger/production/chaincodes/example_cc.2.0
 func TestCreateChaincode(t *testing.T) {
+	//res := CreateChaincode(
+	//	"example_cc",
+	//	"2.0",
+	//	"github.com/example_cc",
+	//	"./chaincode",
+	//	"org1",
+	//	"Admin")
+	//
+	//fmt.Println(res)
+
 	res := CreateChaincode(
 		"example_cc",
-		"2.0",
+		"2.1",
 		"github.com/example_cc",
 		"./chaincode",
-		"org1",
+		"org2",
 		"Admin")
 
 	fmt.Println(res)
@@ -72,7 +82,7 @@ func TestInstantiateChaincode(t *testing.T) {
 	res := InstantiateChaincode(
 		"mychannel",
 		"example_cc",
-		"2.0",
+		"2.1",
 		"github.com/example_cc",
 		"org1",
 		"Admin",
